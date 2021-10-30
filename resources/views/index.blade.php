@@ -4,7 +4,7 @@
         <div class="flex justify-end">
             <form method="GET" action="/orders">
                 <input name="search" class="border border-gray-300 rounded-md h-10 p-2" placeholder="Search" value="{{ $search }}" />
-                <button type="submit" class="border bg-red-500 text-white px-6 py-2 rounded-full shadow-lg hover:bg-red-600">Search</button>
+                <button type="submit" class="border bg-red-500 text-white px-6 py-2 rounded-full shadow hover:shadow-lg">Search</button>
             </form>
         </div>
         @if ($orders->isEmpty())
