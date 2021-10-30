@@ -19,9 +19,9 @@ class Order extends Model
         return self::with('pizzas.toppings')->where(function($query) use ($search) {
             if ($search) {
                 $query->whereHas('pizzas', function ($query) use ($search) {
-                    $query->where('size', 'LIKE', $search . '%')
-                        ->orWhere('crust', 'LIKE', $search . '%')
-                        ->orWhere('type', 'LIKE', $search . '%');
+                    $query->where('size', 'LIKE', '%' . $search . '%')
+                        ->orWhere('crust', 'LIKE', '%' . $search . '%')
+                        ->orWhere('type', 'LIKE', '%' . $search . '%');
 
                     if (is_numeric($search)) {
                         $query->orWhere('total_toppings', $search);

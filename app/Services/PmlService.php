@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\PizzaTopping;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PmlService {
     const MAX_PIZZA_PER_ORDER = 24;
@@ -44,7 +46,7 @@ class PmlService {
         DB::beginTransaction();
 
         try {
-            // throw exception if invalid
+            // throws exception if invalid
             $this->validateOrder($this->order);
 
             // save order
@@ -61,28 +63,41 @@ class PmlService {
         }
     }
 
+    /**
+     * Validate Order
+     * @param array $order
+     * @return bool | Exception
+     */
     private function validateOrder($order)
     {
         // check if order is not empty
         if (!$order) {
-            throw new \Exception('No order found.');
+            throw new \Exception('No order found');
         }
 
-        // check if id is a number
-        if (! (isset($order['@attributes']['number'])
-            && is_numeric($order['@attributes']['number']))) {
-            throw new \Exception('Invalid Order Number.');
-        }
+        $validator = Validator::make($order, [
+            '@attributes.number' => 'required|integer',
+            'pizza' => 'required|array|between:0,' . self::MAX_PIZZA_PER_ORDER
+        ], [
+            '@attributes.number.integer' => 'Invalid Order number',
+            'array' => 'Invalid :attribute',
+            'between' => 'Invalid number of :attribute'
+        ], [
+            '@attributes.number' => 'Order Number',
+        ]);
 
-        // check if has pizza and count is less than or equal to max pizza per order
-        $pizzaCount = (isset($order['pizza']) && is_array($order['pizza'])) ? count($order['pizza']) : 0;
-        if ($pizzaCount == 0 || $pizzaCount > self::MAX_PIZZA_PER_ORDER) {
-            throw new \Exception('Invalid number of pizza.');
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors()->first());
         }
 
         return true;
     }
 
+    /**
+     * Validate pizza inside order
+     * @param array $pizza
+     * @return bool | Exception
+     */
     private function validatePizza($pizza)
     {
         // check if pizza is not empty
@@ -90,23 +105,31 @@ class PmlService {
             throw new \Exception('Invalid pizza.');
         }
 
-        // check if id is a number
-        if (!(isset($pizza['@attributes']['number'])
-            && is_numeric($pizza['@attributes']['number']))) {
-            throw new \Exception('Invalid Pizza Number.');
-        }
+        $validator = Validator::make($pizza, [
+            '@attributes.number' => 'required|integer',
+            'toppings' => [
+                Rule::requiredIf($this->isCustomPizza($pizza)),
+                'between:0,' . self::MAX_TOPPINGS_PER_PIZZA
+            ]
+        ], [
+            'integer' => 'Invalid :attribute',
+            'between' => 'Invalid number of toppings'
+        ], [
+            '@attributes.number' => 'Pizza Number',
+        ]);
 
-        // check number of toppings for custom pizza
-        // should be less than the max toppings per pizza
-        if ($this->isCustomPizza($pizza)
-            && isset($pizza['toppings'])
-            && count($pizza['toppings']) > self::MAX_TOPPINGS_PER_PIZZA) {
-            throw new \Exception('Invalid Number of Toppings.');
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors()->first());
         }
 
         return true;
     }
 
+    /**
+     * Validate toppings of pizza
+     * @param array $topping
+     * @return bool | Exception
+     */
     private function validateTopping($topping)
     {
         // check if topping is not empty
@@ -114,18 +137,26 @@ class PmlService {
             throw new \Exception('Invalid topping.');
         }
 
-        // check if area is valid
-        if (! (isset($topping['@attributes']['area'])
-            && isset(PizzaTopping::TOPPING_AREAS[$topping['@attributes']['area']]))) {
-            throw new \Exception('Invalid Topping Area.');
-        }
+        $validator = Validator::make($topping, [
+            '@attributes.area' => [
+                'required',
+                'integer',
+                Rule::in(array_keys(PizzaTopping::TOPPING_AREAS))
+            ],
+            'item' => 'required|' . (
+                is_array($topping['item']) ?
+                    ('between:0,' . self::MAX_TOPPING_ITEMS) : ''
+            )
+        ], [
+            'integer' => 'Invalid :attribute',
+            'between' => 'Invalid number of :attribute',
+            'in' => 'Invalid :attribute'
+        ], [
+            '@attributes.area' => 'topping area'
+        ]);
 
-        // check topping items if exist
-        // and less than the max number of toppings
-        if (!isset($topping['item'])
-            || $this->getNumberOfToppingItems($topping) === 0
-            || $this->getNumberOfToppingItems($topping) > self::MAX_TOPPING_ITEMS) {
-            throw new \Exception('Invalid Number of Topping Items.');
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors()->first());
         }
 
         return true;
@@ -207,7 +238,8 @@ class PmlService {
      */
     private function isCustomPizza($pizza)
     {
-        if ($pizza && isset($pizza['type']) && strtolower($pizza['type']) === 'custom') {
+        if ($pizza && isset($pizza['type'])
+            && strtolower(trim($pizza['type'])) === 'custom') {
             return true;
         }
 
@@ -221,7 +253,9 @@ class PmlService {
      */
     private function getToppings($pizza)
     {
-        if ($pizza && isset($pizza['toppings']) && count($pizza['toppings']) > 0) {
+        if ($pizza
+            && isset($pizza['toppings'])
+            && count($pizza['toppings']) > 0) {
             return $pizza['toppings'];
         }
 
