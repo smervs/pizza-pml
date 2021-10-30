@@ -16,13 +16,16 @@ class Order extends Model
 
     public static function search(string $search)
     {
-        return self::where(function($query) use ($search) {
+        return self::with('pizzas.toppings')->where(function($query) use ($search) {
             if ($search) {
                 $query->whereHas('pizzas', function ($query) use ($search) {
-                    $query->where('size', 'LIKE', "{$search}%")
-                        ->orWhere('crust', 'LIKE', "{$search}%")
-                        ->orWhere('type', 'LIKE', "{$search}%")
-                        ->orWhere('total_toppings', $search);
+                    $query->where('size', 'LIKE', $search . '%')
+                        ->orWhere('crust', 'LIKE', $search . '%')
+                        ->orWhere('type', 'LIKE', $search . '%');
+
+                    if (is_numeric($search)) {
+                        $query->orWhere('total_toppings', $search);
+                    }
                 });
             }
         })->orderBy('id', 'DESC')->get();

@@ -7,6 +7,11 @@
                 <button type="submit" class="border bg-red-500 text-white px-6 py-2 rounded-full">Search</button>
             </form>
         </div>
+        @if ($orders->isEmpty())
+            <div class="mt-8">
+                <div>No orders found.</div>
+            </div>
+        @else
         <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-full gap-6">
             @foreach ($orders as $order)
             <div class="border border-red-400 shadow-xl rounded-xl p-6 cursor-pointer hover:bg-red-500 hover:text-white">
@@ -33,5 +38,6 @@
             </div>
             @endforeach
         </div>
+        @endif
     </div>
 @stop
