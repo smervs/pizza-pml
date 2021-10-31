@@ -169,9 +169,14 @@ class PmlService {
      */
     private function savePizzas($order)
     {
+        // check if there's only one pizza
+        if (isset($this->order['pizza']['@attributes'])) {
+            $pizza = $this->savePizza($order, $this->order['pizza']);
+            $this->saveToppingList($pizza, $this->order['pizza']);
+            return;
+        }
+
         foreach ($this->order['pizza'] as $pizzaXml) {
-            // throw exception if invalid
-            $this->validatePizza($pizzaXml);
             $pizza = $this->savePizza($order, $pizzaXml);
             $this->saveToppingList($pizza, $pizzaXml);
         }
@@ -185,6 +190,9 @@ class PmlService {
      */
     private function savePizza($order, $pizza)
     {
+        // throw exception if invalid
+        $this->validatePizza($pizza);
+
         return $order->pizzas()->create([
             'sequence' => $pizza['@attributes']['number'],
             'size' => $pizza['size'],
@@ -206,9 +214,13 @@ class PmlService {
             return;
         }
 
+        // check if there's only on topping
+        if (isset($pizzaXml['toppings']['@attributes'])) {
+            $this->saveTopping($pizza, $pizzaXml['toppings']);
+            return;
+        }
+
         foreach ($pizzaXml['toppings'] as $toppingXml) {
-            // throw exception if invalid
-            $this->validateTopping($toppingXml);
             $this->saveTopping($pizza, $toppingXml);
         }
     }
@@ -222,6 +234,9 @@ class PmlService {
     private function saveTopping($pizza, $topping)
     {
         if (!$pizza || !$topping) return;
+
+        // throw exception if invalid
+        $this->validateTopping($topping);
 
         return $pizza->toppings()->create([
             'area' => $topping['@attributes']['area'],
@@ -256,6 +271,11 @@ class PmlService {
         if ($pizza
             && isset($pizza['toppings'])
             && count($pizza['toppings']) > 0) {
+            // check if there's only one topping
+            if (isset($pizza['toppings']['@attributes'])) {
+                return [$pizza['toppings']];
+            }
+
             return $pizza['toppings'];
         }
 

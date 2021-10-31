@@ -52,7 +52,7 @@
     {pizza number="2"}
         {size}medium{\size}
         {crust}deep dish{\crust}
-        {type}pepperoni feast hathsts{\type}
+        {type}pepperoni feast{\type}
     {\pizza}
 {\order}
                     </pre>
